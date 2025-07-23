@@ -3,9 +3,9 @@ CREATE TABLE IF NOT EXISTS customers (
     full_name VARCHAR(50) NOT NULL, 
     year_of_birth INT NOT NULL CHECK (year_of_birth >= 1900 AND year_of_birth <= EXTRACT(YEAR FROM CURRENT_DATE)),
     phone VARCHAR(15) NOT NULL UNIQUE,
-    email VARCHAR(100) UNIQUE,
-    nation VARCHAR(50) NOT NULL CHECK (nation IN ('Vietnam', 'USA', 'Japan', 'Korea', 'China'))
+    email VARCHAR(100) UNIQUE
 );
+
 CREATE TABLE IF NOT EXISTS accounts (
     account_id BIGINT PRIMARY KEY, 
     customer_id BIGINT NOT NULL,
@@ -16,17 +16,19 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 
 CREATE TABLE IF NOT EXISTS devices (
-    device_id SERIAL PRIMARY KEY,
+    device_id VARCHAR(37) PRIMARY KEY,
     os VARCHAR(30) NOT NULL,
-    customer_id INT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    verified BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
-    transaction_id SERIAL PRIMARY KEY,
+    transaction_id VARCHAR(37) PRIMARY KEY, -- UUID format
     account_id BIGINT NOT NULL,
-    device_id INT NULL,
-    transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('deposit', 'withdrawal')),
+    device_id VARCHAR(37) NULL,
+    receiver_id BIGINT NULL, -- For transfers
+    transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('deposit', 'withdrawal', 'transfer')),
     transaction_log TEXT,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -35,20 +37,18 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 CREATE TABLE IF NOT EXISTS authentication_logs( 
-    log_id SERIAL PRIMARY KEY,
+    log_id VARCHAR(37) PRIMARY KEY,
     otp VARCHAR(6) NOT NULL,
-    customer_id INT NOT NULL,
+    customer_id BIGINT NOT NULL,
     login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    device_name VARCHAR(50),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS transaction_risks (
-    risk_id SERIAL PRIMARY KEY,
-    transaction_id INT NOT NULL,
+    risk_id VARCHAR(37) PRIMARY KEY,
+    transaction_id VARCHAR(37) NOT NULL,
     risk_score INT CHECK (risk_score BETWEEN 0 AND 100), 
     risk_level VARCHAR(10) CHECK (risk_level IN ('low', 'medium', 'high')),
-    reason TEXT,
     flagged BOOLEAN DEFAULT FALSE,
     evaluated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE

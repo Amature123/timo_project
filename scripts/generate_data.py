@@ -1,6 +1,7 @@
 import random
 import json
 from datetime import datetime
+
 from faker import Faker
 from confluent_kafka import Producer
 import logging
@@ -43,7 +44,8 @@ class KafkaUserDataProducer:
             "full_name": self.fake.name(),
             "year_of_birth": self.fake.date_of_birth(minimum_age=18, maximum_age=70).year,
             "phone": self.fake.unique.phone_number(),
-            "email": self.fake.unique.email()
+            "email": self.fake.unique.email(),
+            "nation": self.fake.country()
         }
 
         account = {
@@ -56,8 +58,9 @@ class KafkaUserDataProducer:
 
         device = {
             "device_id": self.fake.uuid4(),
-            "user_id": customer_id,
-            "os": random.choice(os_list)
+            "customer_id": customer_id,
+            "os": random.choice(os_list),
+            "verified": random.choice([True, False])
         }
 
         transactions = []
@@ -65,16 +68,23 @@ class KafkaUserDataProducer:
         for _ in range(2):
             amount = round(random.uniform(50000, 100000000), 2)
             transaction_id = self.fake.uuid4()
-            txn_type = random.choice(['deposit', 'withdrawal'])
+            txn_type = random.choice(['deposit', 'withdrawal','transfer'])
             transaction_date = self.fake.date_time_this_year()
-
+            if txn_type == 'transfer':
+                receiver_id = random.randint(10**11, 10**12 - 1)
+            if txn_type == 'withdrawal':
+                receiver_id = 666 # Special case for withdrawal
+            else:
+                receiver_id = 333 # Special case for deposit 
             transactions.append({
                 "transaction_id": transaction_id,
                 "account_id": account_id,
                 "device_id": device["device_id"],
                 "transaction_type": txn_type,
                 "amount": amount,
-                "transaction_date": transaction_date.isoformat()
+                "transaction_date": transaction_date.isoformat(),
+                "receiver_id": receiver_id,
+                "transaction_log": f"Transaction {txn_type} of {amount} VND on {transaction_date.strftime('%Y-%m-%d %H:%M:%S')}"
             })
 
             if amount > 50000000:
@@ -93,10 +103,9 @@ class KafkaUserDataProducer:
         auth_logs = []
         for _ in range(random.randint(1, 2)):
             auth_logs.append({
+                "log_id": self.fake.uuid4(),
                 "otp": f"{random.randint(0, 999999):06}",
-                "user_id": customer_id,
-                "device_name": self.fake.word() + '-' + random.choice(['PC', 'iPhone', 'Samsung', 'Xiaomi']),
-                "timestamp": datetime.now().isoformat()
+                "customer_id": customer_id,
             })
 
         return {
@@ -108,18 +117,19 @@ class KafkaUserDataProducer:
             "auth_logs": auth_logs
         }
 
-    def send_messages(self, n_customers=10):
+    def send_messages(self, n_customers=50):
         try:
             for _ in range(n_customers):
                 payload = self._generate_fake_user()
                 logger.info(f"Sending customer {payload['customer']['customer_id']} to Kafka...")
-
+                
                 self.producer.produce(
                     self.topic,
                     value=json.dumps(payload, default=self._json_serializer).encode('utf-8'),
                     callback=self._delivery_report
                 )
-                self.producer.poll(0)  # Allow callback to run
+                self.producer.poll(0)  
+                logger.info(f"Produced message {payload}")
 
             self.producer.flush()
             logger.info("All messages sent.")

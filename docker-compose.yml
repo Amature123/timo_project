@@ -65,12 +65,13 @@ services:
   postgres:
     image: postgres:13
     environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     volumes:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
@@ -166,9 +167,6 @@ services:
     networks:
       - timo_project
 
-volumes:
-  postgres-db-volume:
-  
 
 networks:
   timo_project:
