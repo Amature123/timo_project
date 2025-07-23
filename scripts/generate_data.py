@@ -1,128 +1,128 @@
-import psycopg2
-from faker import Faker
 import random
-from datetime import datetime, timedelta
+import json
+from datetime import datetime
+from faker import Faker
+from confluent_kafka import Producer
+import logging
+import uuid
+
+# Logging Configuration
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 
-DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "airflow",
-    "user": "airflow",
-    "password": "airflow"
-}
+class KafkaUserDataProducer:
+    def __init__(self, bootstrap_servers='kafka:9092', topic='generated_customers'):
+        self.fake = Faker('vi_VN')
+        self.topic = topic
+        self.config = {'bootstrap.servers': bootstrap_servers}
+        self.producer = Producer(self.config)
+        self.fake.unique.clear()
 
-NUM_CUSTOMERS = 10
-NUM_ACCOUNTS_PER_CUSTOMER = (1, 3)
-NUM_TRANSACTIONS_PER_ACCOUNT = (5, 15)
+    def _json_serializer(self, data):
+        if isinstance(data, uuid.UUID):
+            return str(data)
+        raise TypeError(f"Type {type(data)} not serializable")
 
-faker = Faker()
+    def _delivery_report(self, err, msg):
+        if err is not None:
+            logger.error(f"Message delivery failed: {err}")
+        else:
+            logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
+    def _generate_fake_user(self):
+        customer_id = random.randint(10**11, 10**12 - 1)
+        account_id = random.randint(10**15, 10**16 - 1)
+        os_list = ['Android', 'iOS', 'Windows', 'Linux']
 
-def get_connection():
-    return psycopg2.connect(**DB_CONFIG)
+        customer = {
+            "customer_id": customer_id,
+            "full_name": self.fake.name(),
+            "year_of_birth": self.fake.date_of_birth(minimum_age=18, maximum_age=70).year,
+            "phone": self.fake.unique.phone_number(),
+            "email": self.fake.unique.email()
+        }
 
+        account = {
+            "account_id": account_id,
+            "customer_id": customer_id,
+            "account_type": random.choice(['savings', 'personal', 'business']),
+            "created_at": self.fake.date_time_this_year().isoformat(),
+            "balance": round(random.uniform(100000, 50000000), 2)
+        }
 
-def insert_customers(cur):
-    customers = []
-    for _ in range(NUM_CUSTOMERS):
-        full_name = faker.name()
-        phone = faker.unique.phone_number()
-        email = faker.unique.email()
-        cur.execute("""
-            INSERT INTO Customers (full_name, phone, email)
-            VALUES (%s, %s, %s)
-            RETURNING customer_id;
-        """, (full_name, phone, email))
-        customers.append(cur.fetchone()[0])
-    return customers
+        device = {
+            "device_id": self.fake.uuid4(),
+            "user_id": customer_id,
+            "os": random.choice(os_list)
+        }
 
-def insert_accounts(cur, customer_ids):
-    account_ids = []
-    for customer_id in customer_ids:
-        for _ in range(random.randint(*NUM_ACCOUNTS_PER_CUSTOMER)):
-            cur.execute("""
-                INSERT INTO account (customer_id)
-                VALUES (%s)
-                RETURNING account_id;
-            """, (customer_id,))
-            account_ids.append((cur.fetchone()[0], customer_id))
-    return account_ids
-
-def insert_transactions(cur, account_pairs):
-    transaction_ids = []
-    for account_id, _ in account_pairs:
-        for _ in range(random.randint(*NUM_TRANSACTIONS_PER_ACCOUNT)):
+        transactions = []
+        risks = []
+        for _ in range(2):
+            amount = round(random.uniform(50000, 100000000), 2)
+            transaction_id = self.fake.uuid4()
             txn_type = random.choice(['deposit', 'withdrawal'])
-            amount = random.choice([50, 100, 200, 5000, 10000, 20000])  
-            txn_date = faker.date_time_between(start_date='-1y', end_date='now')
-            cur.execute("""
-                INSERT INTO Transactions (account_id, transaction_type, amount, transaction_date)
-                VALUES (%s, %s, %s, %s)
-                RETURNING transaction_id;
-            """, (account_id, txn_type, amount, txn_date))
-            transaction_ids.append(cur.fetchone()[0])
-    return transaction_ids
+            transaction_date = self.fake.date_time_this_year()
 
-def insert_devices(cur, customer_ids):
-    for customer_id in customer_ids:
+            transactions.append({
+                "transaction_id": transaction_id,
+                "account_id": account_id,
+                "device_id": device["device_id"],
+                "transaction_type": txn_type,
+                "amount": amount,
+                "transaction_date": transaction_date.isoformat()
+            })
+
+            if amount > 50000000:
+                risk = {"risk_score": random.randint(80, 100), "risk_level": "high", "flagged": True,
+                        "reason": "High-value transaction"}
+            elif amount > 10000000:
+                risk = {"risk_score": random.randint(40, 79), "risk_level": "medium",
+                        "flagged": random.choice([True, False]), "reason": "Moderate-value transaction"}
+            else:
+                risk = {"risk_score": random.randint(0, 39), "risk_level": "low", "flagged": False,
+                        "reason": "Low-value transaction"}
+
+            risk["transaction_id"] = transaction_id
+            risks.append(risk)
+
+        auth_logs = []
         for _ in range(random.randint(1, 2)):
-            device_name = faker.word().capitalize() + " " + str(random.randint(100, 999))
-            os = random.choice(["Android", "iOS", "Windows", "Linux", "macOS"])
-            cur.execute("""
-                INSERT INTO devices (device_name, os, user_id)
-                VALUES (%s, %s, %s);
-            """, (device_name, os, customer_id))
+            auth_logs.append({
+                "otp": f"{random.randint(0, 999999):06}",
+                "user_id": customer_id,
+                "device_name": self.fake.word() + '-' + random.choice(['PC', 'iPhone', 'Samsung', 'Xiaomi']),
+                "timestamp": datetime.now().isoformat()
+            })
 
-def insert_auth_logs(cur, customer_ids):
-    for customer_id in customer_ids:
-        for _ in range(random.randint(1, 3)):
-            otp = str(random.randint(100000, 999999))
-            login_time = faker.date_time_between(start_date='-1y', end_date='now')
-            device_name = faker.word().capitalize() + " " + str(random.randint(100, 999))
-            cur.execute("""
-                INSERT INTO authentication_log (otp, user_id, login_time, device_name)
-                VALUES (%s, %s, %s, %s);
-            """, (otp, customer_id, login_time, device_name))
+        return {
+            "customer": customer,
+            "account": account,
+            "device": device,
+            "transactions": transactions,
+            "risks": risks,
+            "auth_logs": auth_logs
+        }
 
-def insert_transaction_risks(cur, transaction_ids):
-    for txn_id in random.sample(transaction_ids, k=int(len(transaction_ids) * 0.4)):  # flag 40%
-        score = random.randint(0, 100)
-        level = 'low' if score < 33 else 'medium' if score < 66 else 'high'
-        reason = faker.sentence()
-        flagged = score > 70
-        evaluated = faker.date_time_between(start_date='-6mo', end_date='now')
-        cur.execute("""
-            INSERT INTO transaction_risks (transaction_id, risk_score, risk_level, reason, flagged, evaluated_at)
-            VALUES (%s, %s, %s, %s, %s, %s);
-        """, (txn_id, score, level, reason, flagged, evaluated))
+    def send_messages(self, n_customers=10):
+        try:
+            for _ in range(n_customers):
+                payload = self._generate_fake_user()
+                logger.info(f"Sending customer {payload['customer']['customer_id']} to Kafka...")
 
-# ----- Run Everything -----
-def main():
-    conn = get_connection()
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                print("Inserting customers...")
-                customers = insert_customers(cur)
+                self.producer.produce(
+                    self.topic,
+                    value=json.dumps(payload, default=self._json_serializer).encode('utf-8'),
+                    callback=self._delivery_report
+                )
+                self.producer.poll(0)  # Allow callback to run
 
-                print("Inserting accounts...")
-                accounts = insert_accounts(cur, customers)
+            self.producer.flush()
+            logger.info("All messages sent.")
+        except Exception as e:
+            logger.error(f"Error sending messages to Kafka: {e}")
 
-                print("Inserting transactions...")
-                transactions = insert_transactions(cur, accounts)
-
-                print("Inserting devices...")
-                insert_devices(cur, customers)
-
-                print("Inserting authentication logs...")
-                insert_auth_logs(cur, customers)
-
-                print("Inserting transaction risks...")
-                insert_transaction_risks(cur, transactions)
-
-    finally:
-        conn.close()
-
-if __name__ == "__main__":
-    main()

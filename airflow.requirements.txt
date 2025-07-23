@@ -1,3 +1,9 @@
 pandas
 numpy
 psycopg2-binary
+elasticsearch>=7.0.0,<=8.17.1
+faker>=30.0.0,<=35.0.0
+python-dotenv
+faker
+jsonschema
+confluent-kafka

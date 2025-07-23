@@ -1,28 +1,41 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from datetime import datetime
-
-from traitlets import default
-from scripts.generate_data import get_connection, insert_customers, insert_accounts, insert_transactions
 from airflow.operators.bash import BashOperator
+from datetime import datetime, timedelta
+from airflow.utils.dates import days_ago
+from scripts.generate_data import KafkaUserDataProducer
+from scripts.data_quality_standard import DataQualityChecker
 from airflow.operators.python import PythonOperator
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 default_args = {
-    'owner': 'airflow',
+    'owner': 'timo_datam',
     'depends_on_past': False,
-    'start_date': datetime(2023, 10, 1),
+    'start_date': datetime(2024, 1, 1),
+    'email_on_failure': False,
+    'email_on_retry': False,
     'retries': 1,
+    'retry_delay': timedelta(minutes=2),
 }
+def run_data_quality_checker():
+    checker = DataQualityChecker()
+    checker.check_data_quality()
 
-dag = DAG(
-    'timo_dag',
+def run_kafka_data_producer():
+    producer = KafkaUserDataProducer()
+    producer.send_messages()
+
+with DAG(
+    dag_id='kafka_data_generation_dag',
     default_args=default_args,
-    description='A DAG to generate and insert data into Timo database',
-    schedule_interval='* * * * *', 
+    schedule_interval='* * * * *',  
     catchup=False,
+    tags=['kafka', 'data-generator']
+) as dag:
+    generate_data = PythonOperator(
+    task_id='generate_kafka_data',
+    python_callable=run_kafka_data_producer,
 )
 
+    data_quality_check = PythonOperator(
+    task_id='data_quality_check',
+    python_callable=run_data_quality_checker,
+)
+    generate_data >> data_quality_check
