@@ -1,137 +1,129 @@
 {
-    "timestamp": "2025-07-24T11:05:00.925071",
+    "timestamp": "2025-07-24T11:11:01.179716",
     "violations": [
         {
-            "timestamp": "2025-07-24T11:05:00.829368",
-            "customer_id": 390657009841,
+            "timestamp": "2025-07-24T11:11:01.058240",
+            "customer_id": 862202223660,
+            "issues": [
+                "High-value transaction (25610445.44) without strong auth",
+                "Daily total 25610445.44 exceeds limit without strong auth on 2025-06-13"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.061292",
+            "customer_id": 918643884117,
             "issues": [
                 "Transaction from untrusted device",
                 "Transaction from untrusted device"
             ]
         },
         {
-            "timestamp": "2025-07-24T11:05:00.833931",
-            "customer_id": 676337640201,
+            "timestamp": "2025-07-24T11:11:01.069064",
+            "customer_id": 307905179417,
             "issues": [
-                "High-value transaction (58008632.08) without strong auth",
-                "High-value transaction (66462724.21) without strong auth",
-                "Daily total 58008632.08 exceeds limit without strong auth on 2025-06-02",
-                "Daily total 66462724.21 exceeds limit without strong auth on 2025-02-13"
+                "High-value transaction (70703841.6) without strong auth",
+                "Daily total 70703841.6 exceeds limit without strong auth on 2025-05-19"
             ]
         },
         {
-            "timestamp": "2025-07-24T11:05:00.847727",
-            "customer_id": 143221445451,
+            "timestamp": "2025-07-24T11:11:01.075481",
+            "customer_id": 645658772880,
             "issues": [
-                "High-value transaction (49965567.51) without strong auth",
-                "Daily total 49965567.51 exceeds limit without strong auth on 2025-02-09"
+                "High-value transaction (50956056.18) without strong auth",
+                "Daily total 50956056.18 exceeds limit without strong auth on 2025-02-11"
             ]
         },
         {
-            "timestamp": "2025-07-24T11:05:00.856382",
-            "customer_id": 984770932659,
+            "timestamp": "2025-07-24T11:11:01.082149",
+            "customer_id": 421895703998,
+            "issues": [
+                "High-value transaction (26629741.53) without strong auth",
+                "Daily total 26629741.53 exceeds limit without strong auth on 2025-07-13"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.093550",
+            "customer_id": 718986745389,
+            "issues": [
+                "Transaction from untrusted device",
+                "High-value transaction (87677475.22) without strong auth",
+                "Transaction from untrusted device",
+                "Daily total 87677475.22 exceeds limit without strong auth on 2025-04-03"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.097372",
+            "customer_id": 990379746053,
+            "issues": [
+                "High-value transaction (45025944.25) without strong auth",
+                "High-value transaction (24597133.93) without strong auth",
+                "Daily total 45025944.25 exceeds limit without strong auth on 2025-02-13",
+                "Daily total 24597133.93 exceeds limit without strong auth on 2025-04-11"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.104056",
+            "customer_id": 554788874607,
+            "issues": [
+                "High-value transaction (88590297.22) without strong auth",
+                "Daily total 88590297.22 exceeds limit without strong auth on 2025-04-04"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.115548",
+            "customer_id": 657861861880,
+            "issues": [
+                "Transaction from untrusted device",
+                "High-value transaction (28487516.66) without strong auth",
+                "Transaction from untrusted device",
+                "Daily total 28487516.66 exceeds limit without strong auth on 2025-03-17"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.126683",
+            "customer_id": 710765337373,
+            "issues": [
+                "High-value transaction (16419426.37) without strong auth"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.143459",
+            "customer_id": 217030203653,
+            "issues": [
+                "High-value transaction (19906012.92) without strong auth"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.155144",
+            "customer_id": 246473781836,
+            "issues": [
+                "Transaction from untrusted device",
+                "High-value transaction (12884457.03) without strong auth",
+                "Transaction from untrusted device"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.159346",
+            "customer_id": 886174117992,
+            "issues": [
+                "High-value transaction (86501714.11) without strong auth",
+                "Daily total 86501714.11 exceeds limit without strong auth on 2025-05-31"
+            ]
+        },
+        {
+            "timestamp": "2025-07-24T11:11:01.175525",
+            "customer_id": 100962916309,
             "issues": [
                 "Transaction from untrusted device",
                 "Transaction from untrusted device"
             ]
         },
         {
-            "timestamp": "2025-07-24T11:05:00.859159",
-            "customer_id": 796053411067,
+            "timestamp": "2025-07-24T11:11:01.179693",
+            "customer_id": 579615634977,
             "issues": [
                 "Transaction from untrusted device",
                 "Transaction from untrusted device"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.865528",
-            "customer_id": 466497453818,
-            "issues": [
-                "Transaction from untrusted device",
-                "Transaction from untrusted device"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.876913",
-            "customer_id": 924764408273,
-            "issues": [
-                "Transaction from untrusted device",
-                "Transaction from untrusted device"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.879951",
-            "customer_id": 601461228641,
-            "issues": [
-                "High-value transaction (86184109.0) without strong auth"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.892483",
-            "customer_id": 981819043379,
-            "issues": [
-                "Transaction from untrusted device",
-                "Transaction from untrusted device"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.894689",
-            "customer_id": 820038842961,
-            "issues": [
-                "Transaction from untrusted device",
-                "Transaction from untrusted device"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.902769",
-            "customer_id": 755477926129,
-            "issues": [
-                "High-value transaction (61779720.66) without strong auth",
-                "Transaction from untrusted device",
-                "High-value transaction (21323976.31) without strong auth",
-                "Transaction from untrusted device",
-                "Daily total 61779720.66 exceeds limit without strong auth on 2025-05-29",
-                "Daily total 21323976.31 exceeds limit without strong auth on 2025-04-01"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.907380",
-            "customer_id": 891749967898,
-            "issues": [
-                "Transaction from untrusted device",
-                "High-value transaction (82798411.68) without strong auth",
-                "Transaction from untrusted device",
-                "Daily total 82798411.68 exceeds limit without strong auth on 2025-06-15"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.913417",
-            "customer_id": 786727675163,
-            "issues": [
-                "Transaction from untrusted device",
-                "High-value transaction (55489605.87) without strong auth",
-                "Transaction from untrusted device",
-                "Daily total 55489605.87 exceeds limit without strong auth on 2025-05-26"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.918842",
-            "customer_id": 340169269049,
-            "issues": [
-                "High-value transaction (39183434.11) without strong auth",
-                "Transaction from untrusted device",
-                "Transaction from untrusted device",
-                "Daily total 39183434.11 exceeds limit without strong auth on 2025-03-05"
-            ]
-        },
-        {
-            "timestamp": "2025-07-24T11:05:00.925056",
-            "customer_id": 536983023929,
-            "issues": [
-                "High-value transaction (71684118.98) without strong auth",
-                "High-value transaction (58583921.04) without strong auth",
-                "Daily total 71684118.98 exceeds limit without strong auth on 2025-03-17",
-                "Daily total 58583921.04 exceeds limit without strong auth on 2025-04-25"
             ]
         }
     ]
