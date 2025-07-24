@@ -1,0 +1,47 @@
+{
+    "timestamp": "2025-07-24T10:56:00.685464",
+    "violations": [
+        {
+            "customer_id": 152199252615,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 609444931862,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 422047482746,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 305623551071,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 395889763992,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 504017346620,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 656726005818,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        }
+    ]
+}

@@ -17,7 +17,7 @@ default_args = {
 }
 def run_data_quality_checker():
     checker = DataQualityChecker()
-    checker.check_data_quality_and_add_to_db()
+    checker.check_data_quality()
 
 def run_kafka_data_producer():
     producer = KafkaUserDataProducer()
@@ -25,12 +25,12 @@ def run_kafka_data_producer():
 def run_monitoring_auditor():
     auditor = MonitoringAuditor()
     auditor.run_audit() 
-    auditor.report()
+
 
 with DAG(
     dag_id='kafka_data_generation_dag',
     default_args=default_args,
-    schedule_interval='* * * * *',  
+    schedule_interval='* * * * *',  # Every 3 minutes
     catchup=False,
     tags=['kafka', 'data-generator']
 ) as dag:
@@ -38,7 +38,6 @@ with DAG(
     task_id='generate_kafka_data',
     python_callable=run_kafka_data_producer,
 )
-
     data_quality_check = PythonOperator(
     task_id='data_quality_check',
     python_callable=run_data_quality_checker,
@@ -47,5 +46,4 @@ with DAG(
     task_id='monitoring_audit',
     python_callable=run_monitoring_auditor,
 )
-    generate_data >> data_quality_check 
-    generate_data >> monitoring_audit
+    generate_data >> data_quality_check >> monitoring_audit

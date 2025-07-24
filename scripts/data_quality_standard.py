@@ -1,6 +1,6 @@
 from itertools import count
 from click import group
-from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Consumer, KafkaError,Producer
 import psycopg2
 
 import json
@@ -13,12 +13,16 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+# log file handler for data quality checker
+file_handler = logging.FileHandler('/opt/airflow/report_logs/data_quality_checker.log')
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+logger.addHandler(file_handler)
 
 class DataQualityChecker:
     def __init__(self, topic='generated_customers', bootstrap_servers='kafka:9092'):
         self.topic = topic
         self.bootstrap_servers = bootstrap_servers
-        group_id = str(uuid.uuid4())
+        group_id = "TimoDataQualityChecker"
         self.consumer = Consumer({
             'bootstrap.servers': self.bootstrap_servers,
             'auto.offset.reset': 'latest',
@@ -29,13 +33,25 @@ class DataQualityChecker:
         self.valid_record = []
         self.CCCD_REGEX = r'^\d{12}$'
         self.VALID_TRANSACTION_TYPES = ['deposit', 'withdrawal', 'transfer', 'payment']
+        self.producer_topic = 'data_quality_violations'
+        self.producer = Producer({'bootstrap.servers': self.bootstrap_servers})
+        self.violations = []
+    
+    def _json_serializer(self, data):
+        if isinstance(data, uuid.UUID):
+            return str(data)
+        raise TypeError(f"Type {type(data)} not serializable")
 
-
-    def check_data_quality_and_add_to_db(self, max_messages=50):
+    def _delivery_report(self, err, msg):
+        if err is not None:
+            logger.error(f"Message delivery failed: {err}")
+        else:
+            logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+    def check_data_quality(self, max_messages=20):
         try:
             count = 0
             while count < max_messages:
-                msg = self.consumer.poll(1.0)
+                msg = self.consumer.poll(0.5) 
                 if msg is None:
                     continue
                 if msg.error():
@@ -53,20 +69,20 @@ class DataQualityChecker:
                 issues = self.validate_data_quality(data)
                 if issues:
                     logger.warning(f"Data quality issues found: {issues}")
+                    self.violations.append({
+                        "customer_id": data.get('customer', {}).get('customer_id'),
+                        "issues": issues
+                    })
+                    self.report()
                 else:
                     logger.info("Data quality check passed.")
-                    try :
-                        logger.info("Inserting valid data into database.")
-                        self.insert_valid_data_to_db(data)
-                        self.valid_record.append(data)
-                    except Exception as e:
-                        logger.error(f"Error inserting data into database: {e}")
-
+                    self.insert_valid_data_to_db(data)
         except KeyboardInterrupt:
             pass
         finally:
             self.consumer.close()
-
+            logger.info("Data quality check completed.")
+            
     def validate_data_quality(self, tx):
         issues = []
         # Getter
@@ -82,6 +98,7 @@ class DataQualityChecker:
             if not customer.get(field):
                 issues.append(f"Missing or null field: {field}")
 
+
         # CCCD format check
         if not re.fullmatch(self.CCCD_REGEX, str(customer.get('customer_id', ''))):
             issues.append("Invalid CCCD format: should be 12 digits")
@@ -92,25 +109,11 @@ class DataQualityChecker:
                 issues.append(f"Missing or null field: {field}")
 
         # Validate device fields
-        for field in ['device_id', 'os', 'verified']:
+        for field in ['device_id', 'os','verified']:
             if not device.get(field):
                 issues.append(f"Missing or null field: {field}")
 
-        # Validate transaction fields
-        for txn in transactions:
-            for field in ['transaction_id', 'amount', 'transaction_type','receiver_id', 'transaction_date']:
-                if txn.get(field) in [None, '']:
-                    issues.append(f"Missing or null field: {field}")
-            if txn.get('transaction_type') not in self.VALID_TRANSACTION_TYPES:
-                issues.append(f"Invalid transaction_type: {txn.get('transaction_type')}")
-            if not isinstance(txn.get('amount'), (int, float)) or txn.get('amount') <= 0:
-                issues.append("Invalid or missing amount")
-            txid = txn.get('transaction_id')
-            if txid in self.seen_transaction_ids:
-                issues.append(f"Duplicate transaction_id: {txid}")
-            else:
-                self.seen_transaction_ids.add(txid)
-        
+
         # Check foreign key relationships
         # 1. Customer ↔ Account
         if account.get('customer_id') != customer.get('customer_id'):
@@ -132,11 +135,10 @@ class DataQualityChecker:
             if risk.get('transaction_id') not in transaction_ids:
                 issues.append(f"Foreign key mismatch: risk.transaction_id not found in transactions ({risk.get('transaction_id')})")
 
-        # 5. Auth Log ↔ Customer
+        # 5. Auth Log ↔ Transaction
         for log in auth_logs:
-            if log.get('customer_id') != customer.get('customer_id'):
-                issues.append("Foreign key mismatch: auth_log.customer_id != customer.customer_id")
-
+            if log.get('transaction_id') not in transaction_ids:
+                issues.append("Foreign key mismatch: auth_log.transaction_id != transaction.transaction_id")
 
         return issues
     def insert_valid_data_to_db(self, record): 
@@ -153,9 +155,6 @@ class DataQualityChecker:
             customer = record['customer']
             account = record['account']
             device = record['device']
-            transactions = record['transactions']
-            risks = record['risks']
-            auth_logs = record['auth_logs']
 
             # Insert customer
             cursor.execute("""
@@ -179,50 +178,45 @@ class DataQualityChecker:
 
             # Insert device
             cursor.execute("""
-                INSERT INTO devices (device_id, os, customer_id, verified)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO devices (device_id, os, customer_id)
+                VALUES (%s, %s, %s)
                 ON CONFLICT (device_id) DO NOTHING;
             """, (
-                device.get('device_id'), device.get('os'), customer.get('customer_id'), device.get('verified')
+                device.get('device_id'), device.get('os'), customer.get('customer_id')
             ))
 
-            # Insert transactions
-            for txn in transactions:
-                cursor.execute("""
-                    INSERT INTO transactions (transaction_id, account_id, device_id, receiver_id, transaction_type, transaction_log, amount, transaction_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (transaction_id) DO NOTHING;
-                """, (
-                    txn.get('transaction_id'), txn.get('account_id'
-                    ), txn['device_id'],
-                    txn.get('receiver_id'), txn.get('transaction_type'), txn.get('transaction_log'),
-                    txn.get('amount'), txn.get('transaction_date')
-                ))
-
-            # Insert risks
-            for risk in risks:
-                cursor.execute("""
-                    INSERT INTO transaction_risks (risk_id, transaction_id, risk_score, risk_level, flagged)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (risk_id) DO NOTHING;
-                """, (
-                    str(uuid.uuid4()),
-                    risk.get('transaction_id'), risk.get('risk_score'),
-                    risk.get('risk_level'), risk.get('flagged', False)
-                ))
-
-            # Insert auth logs
-            for log in auth_logs:
-                cursor.execute("""
-                    INSERT INTO authentication_logs (log_id, otp, customer_id)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (log_id) DO NOTHING;
-                """, (
-                    log.get('log_id'), log.get('otp'), log.get('customer_id')
-                ))
         except Exception as e:
             logger.error(f"Database insertion error: {e}")
         finally:
             conn.commit()
             cursor.close()
             conn.close()
+    
+    def report(self):
+        try:
+            if not self.violations:
+                logger.info("No violations found.")
+                return
+
+            clean_violations = []
+            for v in self.violations:
+                clean_v = {}
+                for k, val in v.items():
+                    if isinstance(val, set):
+                        clean_v[k] = list(val)
+                    else:
+                        clean_v[k] = val
+                clean_violations.append(clean_v)
+
+            report = {
+                "timestamp": datetime.now().isoformat(),
+                "violations": clean_violations
+            }
+
+            report_file = '/opt/airflow/report_logs/data_quality_report.json'
+            with open(report_file, 'w') as f:
+                json.dump(report, f, indent=4)
+
+            logger.info(f"Audit report saved to {report_file}")
+        except Exception as e:
+            logger.error(f"Error generating report: {e}")

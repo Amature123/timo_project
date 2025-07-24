@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS devices (
     device_id VARCHAR(37) PRIMARY KEY,
     os VARCHAR(30) NOT NULL,
     customer_id BIGINT NOT NULL,
-    verified BOOLEAN DEFAULT FALSE,
+
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
 );
 
@@ -38,10 +38,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 CREATE TABLE IF NOT EXISTS authentication_logs( 
     log_id VARCHAR(37) PRIMARY KEY,
-    otp VARCHAR(6) NOT NULL,
-    customer_id BIGINT NOT NULL,
-    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+    auth_method VARCHAR(10) NOT NULL,
+    transaction_id VARCHAR(37) NOT NULL,
+    auth_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS transaction_risks (

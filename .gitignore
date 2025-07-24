@@ -4,7 +4,5 @@ __pycache__/
 *.pyo
 *.pyd
 logs/
-producer.py
-testspeed.py
 *.log
 data

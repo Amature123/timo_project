@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class KafkaUserDataProducer:
+    
     def __init__(self, bootstrap_servers='kafka:9092', topic='generated_customers'):
         self.fake = Faker('vi_VN')
         self.topic = topic
@@ -60,11 +61,12 @@ class KafkaUserDataProducer:
             "device_id": self.fake.uuid4(),
             "customer_id": customer_id,
             "os": random.choice(os_list),
-            "verified": random.choice([True, False])
+            "verified": random.choice([1, 0])
         }
 
         transactions = []
-        risks = []
+        risks = [] 
+        auth_logs = []
         for _ in range(2):
             amount = round(random.uniform(50000, 100000000), 2)
             transaction_id = self.fake.uuid4()
@@ -100,12 +102,11 @@ class KafkaUserDataProducer:
             risk["transaction_id"] = transaction_id
             risks.append(risk)
 
-        auth_logs = []
-        for _ in range(random.randint(1, 2)):
             auth_logs.append({
                 "log_id": self.fake.uuid4(),
-                "otp": f"{random.randint(0, 999999):06}",
-                "customer_id": customer_id,
+                "auth_method": random.choice(['OTP', 'Biometric','None']),
+                "transaction_id": transaction_id,
+                "auth_timestamp": transaction_date.isoformat()
             })
 
         return {
@@ -117,7 +118,7 @@ class KafkaUserDataProducer:
             "auth_logs": auth_logs
         }
 
-    def send_messages(self, n_customers=50):
+    def send_messages(self, n_customers=20):
         try:
             for _ in range(n_customers):
                 payload = self._generate_fake_user()
