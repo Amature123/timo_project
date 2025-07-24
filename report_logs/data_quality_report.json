@@ -1,44 +1,68 @@
 {
-    "timestamp": "2025-07-24T10:56:00.685464",
+    "timestamp": "2025-07-24T11:04:01.100431",
     "violations": [
         {
-            "customer_id": 152199252615,
+            "customer_id": 730341888329,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 609444931862,
+            "customer_id": 101868341627,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 422047482746,
+            "customer_id": 390726776273,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 305623551071,
+            "customer_id": 762749281350,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 395889763992,
+            "customer_id": 968892407652,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 504017346620,
+            "customer_id": 488859654749,
             "issues": [
                 "Missing or null field: verified"
             ]
         },
         {
-            "customer_id": 656726005818,
+            "customer_id": 431871317222,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 454695424458,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 401268307902,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 707922664885,
+            "issues": [
+                "Missing or null field: verified"
+            ]
+        },
+        {
+            "customer_id": 237093202756,
             "issues": [
                 "Missing or null field: verified"
             ]
